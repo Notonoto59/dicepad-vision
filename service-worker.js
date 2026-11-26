@@ -1,4 +1,4 @@
-const CACHE='dicepad-vision-v1.0.3';
+const CACHE='dicepad-vision-v2.0.0';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon.svg'
 ];
@@ -10,5 +10,5 @@ self.addEventListener('activate',event=>{
 });
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;
-  event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request)));
+  event.respondWith(fetch(event.request).then(response=>{if(response.ok&&new URL(event.request.url).pathname.endsWith('/index.html')){const copy=response.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));}return response;}).catch(()=>caches.match(event.request)));
 });
