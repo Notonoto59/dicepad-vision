@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
-<style>:root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #e5eee9; background: #071815; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+  <style>:root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #e5eee9; background: #071815; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin:0; min-width:320px; background: radial-gradient(ellipse 950px 430px at 50% -190px, #194d42 0, transparent 90%), #071815; }
@@ -142,10 +142,22 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
 @media (max-width:900px) { .main-grid { grid-template-columns:1fr; } .lower-grid { grid-template-columns:1fr 1fr; } .intro { padding-top:34px; } }
 @media (max-width:650px) { .app-shell { padding:0 13px; } .topbar { min-height:71px; } .brand-mark { width:38px; height:38px; } .brand-text { font-size:18px; } .privacy-badge { font-size:10px; padding:7px 9px; } .intro { padding:25px 2px 23px; } h1 { letter-spacing:-1.3px; font-size:33px; } .intro p { font-size:13px; } .panel { padding:15px; border-radius:15px; } .section-heading { margin-bottom:14px; } h2 { font-size:17px; } .camera-actions .button { flex:1; padding:10px 8px; font-size:12px; } .camera-actions #startCamera { flex:1.6; } .validation-area { grid-template-columns:1fr; } .lower-grid { grid-template-columns:1fr; gap:13px; margin-top:13px; } .footer { flex-direction:column; } .die-card { padding:8px; gap:8px; } .die-icon { width:39px; height:39px; } .die-control { gap:5px; } .die-number { min-width:32px; font-size:18px; } .die-remove { width:20px; } .die-label strong { font-size:12px; } .die-label small { font-size:10px; } }
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;}}
+
+.calibration-panel {margin-top:14px;padding:14px;border:1px solid #52785f;border-radius:12px;background:#112c21}
+.calibration-head {display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:13px;color:#d7e8d9}
+.calibration-tag {font-size:11px;color:#f7d19b;background:#46371f;border-radius:8px;padding:5px 9px;white-space:nowrap}
+.calibration-tag.ready {color:#b8f2ca;background:#225233}
+.calibration-panel p {font-size:12px;line-height:1.5;color:#a9c6b3;margin:10px 0}
+.calibration-actions {display:flex;flex-wrap:wrap;gap:8px}
+.calibration-actions .button {font-size:12px;flex:1}
+.calibration-actions .button.subtle {flex:0;min-width:65px}
+.die-card.unreadable {border-color:#ae7a43;background:#362817}
+.die-card.unreadable .die-label small {color:#ffdfa8}
+@media(max-width:650px) {.calibration-panel {padding:12px}.calibration-actions .button {padding:10px 8px}}
 </style>
   <title>DicePad — Reconnaissance de dés physiques</title>
-
-
+  
+  
 </head>
 <body>
   <div class="app-shell">
@@ -158,7 +170,7 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
     </header>
     <main>
       <section class="intro" aria-labelledby="page-title">
-        <div class="eyebrow">Prototype v1.0 · Dés à six faces</div>
+        <div class="eyebrow">Prototype v2.0 · Dés à six faces</div>
         <h1 id="page-title">Lancez de vrais dés.<br><span>Lisez les résultats.</span></h1>
         <p>Cadrez de <strong>1 à 5 dés</strong> avec la caméra du smartphone. DicePad reconnaît les faces et peut leur attribuer des dizaines aléatoires de 1 à 5.</p>
       </section>
@@ -186,14 +198,20 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
             <button class="button outline" id="scanButton" type="button" disabled>Analyser</button>
             <button class="button subtle" id="stopCamera" type="button" disabled>Arrêter</button>
           </div>
+          <div class="calibration-panel" id="calibrationPanel">
+            <div class="calibration-head"><strong>1. Calibrez le fond vide</strong><span class="calibration-tag" id="calibrationState">Non calibré</span></div>
+            <p>Fixez le téléphone, retirez tous les dés et appuyez sur « Calibrer ». Sans toucher à la caméra, lancez ensuite les dés : le logiciel recherchera ce qui est apparu sur le plateau.</p>
+            <div class="calibration-actions"><button class="button primary" id="calibrateButton" type="button" disabled>◎ Calibrer le plateau vide</button><button class="button subtle" id="resetCalibration" type="button" disabled>Effacer</button></div>
+          </div>
           <div class="aux-actions">
+            <button type="button" id="diagnosticButton" class="text-action">↓ Sauver une photo diagnostic</button>
             <label class="text-action file-picker"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m4 18 6-6 4 4 3-3 4 4"/></svg> Importer une photo<input id="fileInput" type="file" accept="image/*"></label>
             <button type="button" id="demoButton" class="text-action"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20h16V4H4z"/><path d="M8 4v16M4 9h16"/></svg> Tester avec 5 dés</button>
           </div>
           <details class="settings" id="settings">
             <summary>Réglages de reconnaissance <span aria-hidden="true">⌄</span></summary>
             <div class="settings-body">
-              <div class="field-row"><label for="diceTone">Couleur des dés</label><select id="diceTone"><option value="light">Clairs / points foncés</option><option value="dark">Foncés / points clairs</option></select></div>
+              <div class="field-row"><label for="diceTone">Couleur des dés</label><select id="diceTone"><option value="auto" selected>Automatique (recommandé)</option><option value="light">Clairs / points foncés</option><option value="dark">Foncés / points clairs</option></select></div>
               <div class="field-row"><label for="rotation">Rotation de l'image</label><select id="rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
               <label class="toggle-row"><span><strong>Inverser horizontalement</strong><small>Utile avec le miroir à 45°</small></span><input id="flipImage" type="checkbox" role="switch"></label>
               <label class="toggle-row"><span><strong>Analyse automatique</strong><small>Une lecture environ toutes les 0,8 s</small></span><input id="autoScan" type="checkbox" role="switch" checked></label>
@@ -228,11 +246,11 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
       </div>
       <section class="lower-grid" aria-label="Historique et mode d'emploi">
         <section class="panel side-panel history-panel"><div class="section-heading"><div><span class="section-kicker">03 / JOURNAL</span><h2>Historique</h2></div><button class="small-btn" id="clearHistory" type="button">Effacer</button></div><div id="historyList" class="history-list"><p class="muted">Aucun lancer enregistré.</p></div></section>
-        <section class="panel side-panel tips-panel"><span class="section-kicker">CONSEILS DE PRÉCISION</span><h2>Bien cadrer vos dés</h2><div class="tip"><span class="tip-index">01</span><p><strong>Fond contrasté.</strong> Dés blancs à points noirs sur tapis sombre, ou inversement.</p></div><div class="tip"><span class="tip-index">02</span><p><strong>Vue du dessus.</strong> Éclairage uniforme, sans reflets, et dés espacés d'environ 1 cm.</p></div><div class="tip"><span class="tip-index">03</span><p><strong>Contrôle humain.</strong> Vérifiez les faces proposées, corrigez une erreur puis validez.</p></div></section>
+        <section class="panel side-panel tips-panel"><span class="section-kicker">CONSEILS DE PRÉCISION</span><h2>Bien cadrer vos dés</h2><div class="tip"><span class="tip-index">00</span><p><strong>Calibration.</strong> Capturez le fond vide sous la caméra fixe avant tout lancer. Recalibrez si le téléphone ou la lumière bouge.</p></div><div class="tip"><span class="tip-index">01</span><p><strong>Fond contrasté.</strong> Dés blancs à points noirs sur tapis sombre, ou inversement.</p></div><div class="tip"><span class="tip-index">02</span><p><strong>Vue du dessus.</strong> Éclairage uniforme, sans reflets, et dés espacés d'environ 1 cm.</p></div><div class="tip"><span class="tip-index">03</span><p><strong>Contrôle humain.</strong> Vérifiez les faces proposées, corrigez une erreur puis validez.</p></div></section>
       </section>
       <section class="developer-note"><div class="lock-icon" aria-hidden="true">●</div><div><strong>Vos images restent sur votre appareil.</strong><p>Reconnaissance intégralement locale : aucune photo n'est envoyée à un serveur. Les résultats sont enregistrés uniquement dans ce navigateur. L'accès à la caméra nécessite une page HTTPS ou localhost.</p></div></section>
     </main>
-    <footer class="footer"><span>DicePad Vision · Prototype local v1.0</span><span>1–5 D6 · Caméra Android · PWA installable</span></footer>
+    <footer class="footer"><span>DicePad Vision · Prototype local v2.0</span><span>1–5 D6 · Caméra Android · PWA installable</span></footer>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script>/* DicePad Vision: dependency-free, local browser image analysis.
@@ -398,6 +416,7 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
     return {count:pips.length,pips,sizeRatio,pipThreshold};
   }
   function recognize(image, options = {}) {
+    if (options.background) return recognizeCalibrated(image,options);
     const w = image.width, h = image.height, raw = image.data;
     if (!w || !h || !raw || raw.length < w*h*4) throw new Error('Image RGBA invalide');
     const tone = options.tone === 'dark' ? 'dark' : 'light';
@@ -447,10 +466,180 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
         ...(dice.some(d=>d.confidence<.62)?['Une ou plusieurs lectures sont incertaines. Vérifiez les faces.']:[])
       ]};
   }
-  return {recognize,otsu};
+  // v2: compare each image with an empty-tray reference. This makes die colors
+  // and changing ambient backgrounds far less important than global thresholding.
+  function medianSignedOffset(raw,bg,w,h,c) {
+    const bins=new Uint32Array(129), step=Math.max(1,Math.round(Math.sqrt(w*h/6000)));
+    let count=0;
+    for(let y=8;y<h-8;y+=step)for(let x=8;x<w-8;x+=step){
+      const i=(y*w+x)*4+c;
+      const delta=clamp(Math.round(raw[i]-bg[i]),-64,64)+64;
+      bins[delta]++;count++;
+    }
+    let cumulative=0;
+    for(let i=0;i<bins.length;i++){cumulative+=bins[i];if(cumulative>=count/2)return i-64;}
+    return 0;
+  }
+  function percentileFromHistogram(hist, total, fraction) {
+    let sum=0; const target=total*fraction;
+    for(let i=0;i<256;i++){sum+=hist[i];if(sum>=target)return i;}
+    return 255;
+  }
+  function morphologyOpen(mask,w,h) {
+    // 4-connected erosion/dilation removes isolated sensor noise but preserves tiny dice.
+    const erosion=new Uint8Array(w*h),result=new Uint8Array(w*h);
+    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+      const i=y*w+x;
+      if(mask[i]&&mask[i-1]&&mask[i+1]&&mask[i-w]&&mask[i+w])erosion[i]=1;
+    }
+    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+      const i=y*w+x;
+      if(erosion[i]||erosion[i-1]||erosion[i+1]||erosion[i-w]||erosion[i+w])result[i]=1;
+    }
+    return result;
+  }
+  function fillEnclosedHoles(mask,w,h) {
+    // Dice pips can match the tray's color: their holes must still belong to
+    // the silhouette for local classification. Flood-fill *outside* only.
+    const external=new Uint8Array(w*h),queue=new Int32Array(w*h);
+    let tail=0,head=0;
+    const push=i=>{if(!mask[i]&&!external[i]){external[i]=1;queue[tail++]=i;}};
+    for(let x=0;x<w;x++){push(x);push((h-1)*w+x);}
+    for(let y=1;y<h-1;y++){push(y*w);push(y*w+w-1);}
+    while(head<tail){
+      const i=queue[head++], x=i%w;
+      if(x>0)push(i-1);if(x<w-1)push(i+1);
+      if(i>=w)push(i-w);if(i<(h-1)*w)push(i+w);
+    }
+    const out=new Uint8Array(mask);
+    for(let i=0;i<out.length;i++)if(!external[i])out[i]=1;
+    return out;
+  }
+  function countPipsAtThreshold(box, gray, bodyMask, w, h, t, light) {
+    const side=Math.min(box.w,box.h), inset=Math.max(1,Math.round(side*.045));
+    const x0=box.x, y0=box.y, ww=box.w, hh=box.h;
+    const bits=new Uint8Array(ww*hh),seen=new Uint8Array(ww*hh),queue=new Int32Array(ww*hh);
+    for(let y=inset;y<hh-inset;y++)for(let x=inset;x<ww-inset;x++){
+      const gi=(y+y0)*w+(x+x0);
+      if(!bodyMask[gi])continue;
+      const g=gray[gi];
+      if((light&&g<t)||(!light&&g>t))bits[y*ww+x]=1;
+    }
+    const pips=[];let rejects=0;
+    for(let y=0;y<hh;y++)for(let x=0;x<ww;x++){
+      const first=y*ww+x;
+      if(!bits[first]||seen[first])continue;
+      let hd=0,tail=1,minx=x,maxx=x,miny=y,maxy=y,area=0,sx=0,sy=0,touch=false;
+      seen[first]=1;queue[0]=first;
+      while(hd<tail){
+        const idx=queue[hd++],yy=Math.floor(idx/ww),xx=idx-yy*ww;
+        area++;sx+=xx;sy+=yy;
+        minx=Math.min(minx,xx);maxx=Math.max(maxx,xx);miny=Math.min(miny,yy);maxy=Math.max(maxy,yy);
+        if(xx<=inset||yy<=inset||xx>=ww-inset-1||yy>=hh-inset-1)touch=true;
+        const add=ni=>{if(bits[ni]&&!seen[ni]){seen[ni]=1;queue[tail++]=ni;}};
+        if(xx>0)add(idx-1);if(xx<ww-1)add(idx+1);if(yy>0)add(idx-ww);if(yy<hh-1)add(idx+ww);
+      }
+      const pw=maxx-minx+1,ph=maxy-miny+1,rectArea=pw*ph;
+      const cx=sx/area,cy=sy/area;
+      if(touch||area<Math.max(3,side*side*.0019)||area>side*side*.072||
+        pw/ph<.54||pw/ph>1.85||area/rectArea<.43||area/rectArea>.98||
+        cx/ww<.07||cx/ww>.93||cy/hh<.07||cy/hh>.93){rejects++;continue;}
+      pips.push({x:cx+x0,y:cy+y0,area});
+    }
+    const sorted=pips.map(p=>p.area).sort((a,b)=>a-b);
+    const ratio=sorted.length>1?sorted[sorted.length-1]/sorted[0]:1;
+    // Do not accept 7+ dots, wildly inconsistent sizes, or poor contrast.
+    const ok=pips.length>=1&&pips.length<=6;
+    const score=ok ? (1 - .20*Math.min(3,Math.max(0,ratio-1)) + .018*pips.length -.018*rejects) : -2;
+    return {count:ok?pips.length:0,pips,score,ratio,rejects};
+  }
+  function readFaceCalibrated(box,gray,mask,w,h,tone,bg) {
+    const hist=new Uint32Array(256);let n=0;
+    const inset=Math.max(1,Math.round(Math.min(box.w,box.h)*.035));
+    for(let y=box.y+inset;y<box.y+box.h-inset;y++)
+      for(let x=box.x+inset;x<box.x+box.w-inset;x++){
+        const i=y*w+x;if(!mask[i])continue;
+        hist[gray[i]]++;n++;
+      }
+    if(n<30)return {count:0,pips:[],confidence:0,reason:'image trop petite'};
+    const q02=percentileFromHistogram(hist,n,.02),q12=percentileFromHistogram(hist,n,.12);
+    const q45=percentileFromHistogram(hist,n,.45),q80=percentileFromHistogram(hist,n,.80);
+    const q98=percentileFromHistogram(hist,n,.98);
+    let bgLum=0,bgN=0;
+    if(bg){for(let y=box.y+inset;y<box.y+box.h-inset;y+=3)for(let x=box.x+inset;x<box.x+box.w-inset;x+=3){
+      const j=(y*w+x)*4;bgLum+=(bg[j]*77+bg[j+1]*150+bg[j+2]*29)>>8;bgN++;
+    }}
+    const bgMean=bgN?bgLum/bgN:128;
+    const light=tone==='light'?true:tone==='dark'?false:
+      q45>bgMean+7?true:q45<bgMean-7?false:q45>=128;
+    const spread=light?q80-q02:q98-q12;
+    if(spread<23)return {count:0,pips:[],confidence:0,reason:'contraste insuffisant'};
+    const localOtsu=otsu(hist,n);
+    const candidates=light ?
+      [localOtsu,Math.round(q02+(q80-q02)*.32),Math.round(q02+(q80-q02)*.50),Math.round(q45-27)] :
+      [localOtsu,Math.round(q98-(q98-q12)*.32),Math.round(q98-(q98-q12)*.50),Math.round(q45+27)];
+    let best=null;
+    for(const thr of new Set(candidates.map(n=>clamp(n,10,245)))){
+      const r=countPipsAtThreshold(box,gray,mask,w,h,thr,light);
+      if(!best||r.score>best.score)best={...r,threshold:thr};
+    }
+    if(!best||!best.count)return {count:0,pips:[],confidence:0,reason:'points indéterminés'};
+    const confidence=clamp(.88-.22*Math.max(0,best.ratio-1)+.06*Math.min(spread,90)/90,0.15,.97);
+    return {count:best.count,pips:best.pips,confidence,threshold:best.threshold,spread,reason:''};
+  }
+  function recognizeCalibrated(image,options={}) {
+    const w=image.width,h=image.height,raw=image.data,bg=options.background?.data;
+    if(!bg||options.background.width!==w||options.background.height!==h||bg.length<raw.length)
+      return {...recognize(image,{...options,background:null}),warnings:['Le cadrage a changé : refaites la calibration du plateau vide.']};
+    const channels=[0,1,2].map(i=>medianSignedOffset(raw,bg,w,h,i));
+    const delta=new Uint8Array(w*h),gray=new Uint8Array(w*h),hist=new Uint32Array(256);
+    let total=0;
+    const margin=Math.max(8,Math.round(Math.min(w,h)*.035));
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x,j=i*4;
+      const r=raw[j],g=raw[j+1],b=raw[j+2];
+      gray[i]=(r*77+g*150+b*29)>>8;
+      if(x<margin||y<margin||x>=w-margin||y>=h-margin)continue;
+      const d=Math.max(Math.abs(r-bg[j]-channels[0]),Math.abs(g-bg[j+1]-channels[1]),Math.abs(b-bg[j+2]-channels[2]));
+      const score=clamp(Math.round(d),0,255);delta[i]=score;
+      if((x+y*w)%7===0){hist[score]++;total++;}
+    }
+    const noise=percentileFromHistogram(hist,total,.85);
+    const thr=clamp(Math.round(Math.max(16,noise+13)+(Number(options.bias)||0)*.35),13,80);
+    const rawMask=new Uint8Array(w*h);let changed=0;
+    for(let y=margin;y<h-margin;y++)for(let x=margin;x<w-margin;x++){
+      const i=y*w+x;if(delta[i]>=thr){rawMask[i]=1;changed++;}
+    }
+    const closed=fillEnclosedHoles(morphologyClose(morphologyOpen(rawMask,w,h),w,h,1),w,h);
+    const m=Math.min(w,h),minArea=Math.max(65,(m*.018)**2),maxArea=w*h*.16;
+    const components=connectedComponents(closed,w,h,minArea,maxArea);
+    const candidates=[];
+    for(const box of components){
+      const side=Math.min(box.w,box.h),long=Math.max(box.w,box.h),aspect=long/side;
+      const fill=box.area/(box.w*box.h);
+      if(side<m*.020||long>m*.34||aspect>1.65||fill<.39||fill>.995)continue;
+      const p=readFaceCalibrated(box,gray,closed,w,h,options.tone||'auto',bg);
+      const shape=clamp((1.65-aspect)/.65,0,1);
+      const confidence=p.count?clamp(.55*p.confidence+.45*shape,.1,.99):0;
+      candidates.push({...box,face:p.count,pips:p.pips,confidence,fill,aspect,reason:p.reason});
+    }
+    // Prefer geometrically plausible dice; leave undecipherable dice visible for manual correction.
+    candidates.sort((a,b)=>b.area-a.area);
+    const all=candidates.slice(0,5).sort((a,b)=>a.cy-b.cy||a.cx-b.cx);
+    const changedRatio=changed/((w-2*margin)*(h-2*margin));
+    const warnings=[];
+    if(changedRatio>.30)warnings.push('Le plateau a changé ou la caméra a bougé : recalibrez le fond vide.');
+    if(candidates.length>5)warnings.push('Plus de cinq objets détectés. Retirez les objets étrangers.');
+    if(all.some(x=>!x.face))warnings.push('Certaines faces sont illisibles. Corrigez-les avant validation.');
+    if(all.some(x=>x.face&&x.confidence<.58))warnings.push('Une lecture est incertaine : vérifiez les chiffres.');
+    if(!all.length)warnings.push('Aucun dé détecté. Refaites la calibration et espacez les dés.');
+    return {dice:all.map((d,i)=>({...d,slot:i+1})),detectedTotal:candidates.length,
+      threshold:thr,autoThreshold:noise,tone:options.tone||'auto',calibrated:true,changedRatio,warnings};
+  }
+
+  return {recognize,otsu,recognizeCalibrated};
 });
-</script>
-<script>/* DicePad Vision 1.0 — mobile-first camera UI and local results.
+</script><script>/* DicePad Vision 2.0 — mobile-first camera UI and local results.
  * All camera analysis happens on-device via vision.js (no image uploads).
  */
 (() => {
@@ -467,7 +656,9 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
     modeValues:$('modeValues'), modeFaces:$('modeFaces'), validate:$('validateButton'),
     newRoll:$('newRoll'), final:$('finalResult'), finalNumbers:$('resultNumbers'),
     resultTime:$('resultTime'), resultModeText:$('resultModeText'), copy:$('copyJson'),
-    history:$('historyList'), clearHistory:$('clearHistory'), toast:$('toast')
+    history:$('historyList'), clearHistory:$('clearHistory'), toast:$('toast'),
+    calibrate:$('calibrateButton'),calibState:$('calibrationState'), resetCalibration:$('resetCalibration'),
+    diagnostic:$('diagnosticButton')
   };
   const previewCtx = els.preview.getContext('2d', {willReadFrequently:true});
   const overlayCtx = els.overlay.getContext('2d');
@@ -483,7 +674,7 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
     viewMode:'values', lastResult:null, history:loadHistory(),
     locked:false, stableScans:0, lastSignature:'',
     lastPreview:0, lastScan:0, rafId:0, toastTimer:0,
-    frameReady:false
+    frameReady:false, background:null, lastAnalysis:null
   };
   function loadHistory() {
     try { const value=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'); return Array.isArray(value)?value.slice(0,15):[]; }
@@ -503,6 +694,38 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
     els.sourceState.innerHTML='<span class="state-light"></span> '+text;
     els.sourceState.classList.toggle('live',!!live);
   }
+  function clearCalibration(showNotice=false){
+    state.background=null;state.lastAnalysis=null;
+    els.calibState.textContent='Non calibré';els.calibState.classList.remove('ready');
+    els.resetCalibration.disabled=true;
+    if(showNotice)setMessage('Calibration effacée. Placez le plateau vide sous la caméra puis calibrez à nouveau.','warning');
+  }
+  function calibrateBackground(){
+    if(!state.frameReady||state.source!=='camera'){
+      showToast('Activez la caméra pour calibrer le plateau.');return;
+    }
+    if(!renderStage())return;
+    const image=previewCtx.getImageData(0,0,els.preview.width,els.preview.height);
+    state.background={width:image.width,height:image.height,data:new Uint8ClampedArray(image.data)};
+    state.locked=false;state.dice=[];state.lastSignature='';state.stableScans=0;
+    els.calibState.textContent='Fond calibré';els.calibState.classList.add('ready');
+    els.resetCalibration.disabled=false;renderDiceList();drawOverlay();
+    setMessage('Fond vide enregistré. Placez maintenant 1 à 5 dés puis appuyez sur « Analyser ». Ne déplacez pas le téléphone.','ready');
+    setStatus('Calibration réussie');
+  }
+  function saveDiagnostic(){
+    if(!state.frameReady){showToast('Aucune image à enregistrer.');return;}
+    // Export is always local and initiated explicitly by the user.
+    const stage=document.createElement('canvas');stage.width=els.preview.width;stage.height=els.preview.height;
+    const ctx=stage.getContext('2d');ctx.drawImage(els.preview,0,0);ctx.drawImage(els.overlay,0,0);
+    stage.toBlob(blob=>{
+      if(!blob)return;
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='dicepad-diagnostic-'+new Date().toISOString().slice(0,19).replaceAll(':','-')+'.png';
+      document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
+      showToast('Photo enregistrée localement. Vous pouvez me la joindre pour corriger la lecture.');
+    },'image/png');
+  }
   function renderStage() {
     if (state.source === 'none') return false;
     const source = state.source === 'camera' ? els.video : state.sourceImage;
@@ -518,6 +741,8 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
     if (els.preview.width!==w || els.preview.height!==h) {
       els.preview.width=w; els.preview.height=h;
       els.overlay.width=w; els.overlay.height=h;
+      // A different camera frame size invalidates the reference.
+      if(state.background&&(state.background.width!==w||state.background.height!==h)) clearCalibration(true);
     }
     els.stage.style.aspectRatio=`${w} / ${h}`;
     els.dimensions.textContent=`${w} × ${h}`;
@@ -536,7 +761,7 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
     overlayCtx.clearRect(0,0,w,h);
     for (const [i,die] of state.dice.entries()) {
       if (die.manual || die.x === undefined) continue;
-      const good=die.confidence>=.62;
+      const good=die.face>0&&die.confidence>=.62;
       const stroke=good?'#8cfab4':'#f6cf79';
       const lineWidth=Math.max(2,Math.round(w/360));
       overlayCtx.strokeStyle=stroke; overlayCtx.lineWidth=lineWidth;
@@ -547,7 +772,7 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
           overlayCtx.beginPath();overlayCtx.arc(p.x,p.y,Math.max(3,Math.sqrt(p.area/Math.PI)*1.25),0,Math.PI*2);overlayCtx.stroke();
         }
       }
-      const text=String(die.face); const font=Math.max(12,Math.min(24,w*.022));
+      const text=die.face?String(die.face):'?'; const font=Math.max(12,Math.min(24,w*.022));
       overlayCtx.font=`bold ${font}px system-ui`;
       const x=Math.min(w-31,Math.max(0,die.x-4)),y=Math.max(1,die.y-font-10);
       overlayCtx.fillStyle=good?'#133d27':'#513a15'; overlayCtx.fillRect(x,y,28,font+8);
@@ -583,13 +808,14 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
       await els.video.play();
       state.sourceImage=null;state.source='camera';state.frameReady=false;
       state.locked=false;state.lastSignature='';state.stableScans=0;
-      els.stop.disabled=false;els.start.textContent='↻ Réactiver la caméra';
+      clearCalibration(false);
+      els.stop.disabled=false;els.calibrate.disabled=false;els.start.textContent='↻ Réactiver la caméra';
       setSourceState('Caméra active',true);setStatus('Recherche des dés…');
       if (state.rafId) cancelAnimationFrame(state.rafId);
       state.rafId=requestAnimationFrame(generateFrame);
       els.start.disabled=false;
     } catch(err) {
-      els.start.disabled=false; els.stop.disabled=true;
+      els.start.disabled=false; els.stop.disabled=true;els.calibrate.disabled=true;
       const name=err?.name||'';
       const msg=name==='NotAllowedError'?'Accès caméra refusé : autorisez la caméra dans le navigateur.'
         : name==='NotFoundError'?'Aucune caméra accessible sur cet appareil.'
@@ -607,13 +833,14 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
       state.source=keepFrame?'none':'frozen';
       if (!keepFrame) { setSourceState('Image figée',false); setStatus('Image capturée'); }
     }
-    els.stop.disabled=true;
+    els.stop.disabled=true;els.calibrate.disabled=true;
     els.start.disabled=false;
     if(!keepFrame) drawOverlay();
   }
   function setImage(source,kind='photo') {
     state.sourceImage=source;state.source=kind;state.frameReady=false;
     state.locked=false;state.dice=[];state.lastSignature='';state.stableScans=0;
+    clearCalibration(false);
     if (!renderStage()) throw new Error('Image non décodable');
     setSourceState(kind==='demo'?'Exemple chargé':'Photo chargée',false);
     analyzeImage(false);
@@ -631,39 +858,43 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
     } catch(e){setMessage('Impossible de lire cette image. Choisissez une photo JPEG ou PNG.','warning');}
     finally{URL.revokeObjectURL(url);els.file.value='';}
   }
+  function makeDemoSvg(){
+    const positions=[[170,180,2],[470,190,5],[750,172,3],[340,408,6],[650,405,1]];
+    const body=(face,cx,cy)=>{
+      const dots=(PIP_LAYOUTS[face]||[]).map(([x,y])=>`<circle cx="${cx+(x-50)*1.05}" cy="${cy+(y-50)*1.05}" r="9" fill="#1b2527"/>`).join('');
+      return `<rect x="${cx-60}" y="${cy-60}" width="120" height="120" rx="10" fill="#f5f0e3" stroke="#aaa" stroke-width="3"/>${dots}`;
+    };
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="960" height="570"><rect width="960" height="570" fill="#2b4b42"/>${positions.map(([x,y,f])=>body(f,x,y)).join('')}</svg>`;
+    return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  }
   async function loadDemo() {
     await stopCamera(true);
-    els.tone.value='light';els.bias.value='0';els.biasLabel.textContent='Auto · 0';
-    const canvas=document.createElement('canvas');canvas.width=760;canvas.height=470;
-    const cx=canvas.getContext('2d');cx.fillStyle='#25352e';cx.fillRect(0,0,760,470);
-    const pips={1:[[0,0]],2:[[-1,-1],[1,1]],3:[[-1,-1],[0,0],[1,1]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],6:[[-1,-1],[-1,0],[-1,1],[1,-1],[1,0],[1,1]]};
-    [[130,120,2],[380,120,5],[610,120,3],[260,320,6],[505,320,1]].forEach(([x,y,v])=>{
-      cx.fillStyle='#f9f9f5';cx.fillRect(x-48,y-48,96,96);
-      cx.fillStyle='#17191b';pips[v].forEach(([a,b])=>{cx.beginPath();cx.arc(x+a*26,y+b*26,9,0,Math.PI*2);cx.fill();});
-    });
+    els.tone.value='auto';els.bias.value='0';els.biasLabel.textContent='Auto · 0';
     const img=new Image();
-    img.onload=()=>{setImage(img,'demo');showToast('Exemple chargé : cinq dés à reconnaître')};
-    img.src=canvas.toDataURL('image/png');
+    try{
+      await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=makeDemoSvg();});
+      setImage(img,'demo');showToast('Exemple chargé : cinq dés à reconnaître');
+    }catch{setMessage('Image exemple inaccessible : vérifiez que le dossier samples est présent.','warning');}
   }
-
   function analyzeImage(isAuto=false) {
     if(state.locked || !state.frameReady) return;
     try {
       const image=previewCtx.getImageData(0,0,els.preview.width,els.preview.height);
       const result=window.DicePadVision.recognize(image,{
-        tone:els.tone.value, bias:Number(els.bias.value)
+        tone:els.tone.value, bias:Number(els.bias.value),background:state.background
       });
+      state.lastAnalysis=result;
       let dice=result.dice.map((d,i)=>({...d,source:'camera',manual:false,id:i+1}));
       // If the user added a die manually, allow intentional manual mode only.
-      const signature=dice.map(d=>d.face).sort((a,b)=>a-b).join(',');
+      const signature=dice.map(d=>`${Math.round(d.cx/12)}:${Math.round(d.cy/12)}:${d.face}`).join('|');
       if(signature && signature===state.lastSignature) state.stableScans++;
       else {state.lastSignature=signature;state.stableScans=1;}
       state.dice=dice;
       if(dice.length===0) {
-        setMessage('Aucun dé lisible. Écartez-les, augmentez le contraste ou changez le réglage « Couleur des dés ».','warning');
+        setMessage(state.background?'Aucun dé détecté. Vérifiez que le plateau est immobile et que le fond a été calibré sans dés.':'Aucun dé lisible. Pour une meilleure détection, activez la caméra et calibrez le plateau vide.','warning');
         setStatus(`Seuil ${result.threshold} · Aucun dé`);
       } else {
-        let text=`${dice.length} dé${dice.length>1?'s':''} reconnu${dice.length>1?'s':''} · faces : ${dice.map(d=>d.face).join(' · ')}`;
+        let text=`${dice.length} dé${dice.length>1?'s':''} détecté${dice.length>1?'s':''} · faces : ${dice.map(d=>d.face||'?').join(' · ')}${result.calibrated?' · fond calibré':''}`;
         let kind=state.stableScans>=2?'ready':'';
         if(result.warnings.length) {text+=' · Vérifiez les lectures.';kind='warning';}
         else if(state.stableScans>=2) text+=' · Prêt à valider.';
@@ -684,7 +915,7 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
   function renderDiceList() {
     els.list.replaceChildren();
     els.diceCount.textContent=`${state.dice.length} / 5`;
-    els.validate.disabled=state.dice.length===0 || state.locked;
+    els.validate.disabled=state.dice.length===0 || state.locked || state.dice.some(d=>!d.face||d.face<1||d.face>6);
     els.addDie.disabled=state.dice.length>=5 || state.locked;
     if(!state.dice.length){
       const empty=document.createElement('div');empty.className='no-dice';
@@ -692,16 +923,17 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
       els.list.append(empty);return;
     }
     state.dice.forEach((die,i)=>{
-      const row=document.createElement('div');row.className='die-card';
+      const row=document.createElement('div');row.className='die-card';if(!die.face)row.classList.add('unreadable');
       const icon=document.createElement('div');icon.className='die-icon';icon.innerHTML=pipsSvg(die.face);
       const label=document.createElement('div');label.className='die-label';
       const name=document.createElement('strong');name.textContent=`Dé ${i+1}`;
       const confidence=document.createElement('small');
       confidence.textContent=die.manual?'Correction ou saisie manuelle':
-        die.confidence<.62?'Lecture à vérifier':'Face détectée par la caméra';
+        !die.face?'Face illisible : choisissez sa valeur':die.confidence<.62?'Lecture à vérifier':'Face détectée par la caméra';
       label.append(name,confidence);
       const actions=document.createElement('div');actions.className='die-control';
       const sel=document.createElement('select');sel.setAttribute('aria-label',`Corriger la face du dé ${i+1}`);
+      if(!die.face)sel.add(new Option('?','0'));
       for(let n=1;n<=6;n++){const o=new Option(String(n),String(n));sel.add(o);}
       sel.value=String(die.face);sel.disabled=state.locked;
       sel.addEventListener('change',()=>{
@@ -713,7 +945,7 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
       });
       const n=document.createElement('span');n.className='die-number';
       n.textContent=state.viewMode==='faces'
-        ?String(die.face)
+        ?String(die.face||'?')
         :(state.locked&&state.lastResult?String(state.lastResult.dice[i]?.number??die.face):'—');
       const remove=document.createElement('button');remove.className='die-remove';remove.type='button';
       remove.textContent='×';remove.title=`Retirer le dé ${i+1}`;remove.disabled=state.locked;
@@ -740,7 +972,7 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
     return values;
   }
   function validateRoll() {
-    if(!state.dice.length || state.locked) return;
+    if(!state.dice.length || state.locked || state.dice.some(d=>!d.face||d.face<1||d.face>6)) return;
     const tens=shuffledTens();
     const dice=state.dice.map((die,i)=>({
       slot:i+1,face:die.face,dizaine:tens[i],number:tens[i]*10+die.face,
@@ -812,6 +1044,9 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
   }
   // Controls
   els.start.addEventListener('click',startCamera);
+  els.calibrate.addEventListener('click',calibrateBackground);
+  els.resetCalibration.addEventListener('click',()=>clearCalibration(true));
+  els.diagnostic.addEventListener('click',saveDiagnostic);
   els.stop.addEventListener('click',()=>stopCamera(false));
   els.scan.addEventListener('click',()=>{
     if(state.source==='camera')renderStage();
@@ -821,8 +1056,8 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
   els.file.addEventListener('change',e=>loadPhotoFile(e.target.files?.[0]));
   els.demo.addEventListener('click',loadDemo);
   els.tone.addEventListener('change',updateImageSettings);
-  els.rotate.addEventListener('change',updateImageSettings);
-  els.flip.addEventListener('change',updateImageSettings);
+  els.rotate.addEventListener('change',()=>{clearCalibration(true);updateImageSettings();});
+  els.flip.addEventListener('change',()=>{clearCalibration(true);updateImageSettings();});
   els.bias.addEventListener('input',()=>{
     const n=Number(els.bias.value);
     els.biasLabel.textContent=`Auto ${n<0?'−':n>0?'+':'·'} ${Math.abs(n)}`;
@@ -848,9 +1083,10 @@ select:focus-visible, button:focus-visible,input:focus-visible { outline:2px sol
   });
   renderDiceList();renderHistory();
   // PWA files are cached only on secure origins; camera images are never cached.
-  if('serviceWorker' in navigator && location.protocol==='https:') {window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));}
-  window.__DicePad = {getState:()=>({dice:state.dice,source:state.source,locked:state.locked,lastResult:state.lastResult}),analyze:analyzeImage};
+  if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+  }
+  window.__DicePad = {getState:()=>({dice:state.dice,source:state.source,locked:state.locked,calibrated:!!state.background,lastResult:state.lastResult,analysis:state.lastAnalysis}),analyze:analyzeImage,calibrate:calibrateBackground};
 })();
-</script>
-</body>
+</script></body>
 </html>
