@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102824">
+  <meta name="description" content="DicePad : reconnaissance de 1 à 5 dés physiques avec la caméra du smartphone, sans envoyer d'image sur Internet.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+<style>:root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #e5eee9; background: #071815; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin:0; min-width:320px; background: radial-gradient(ellipse 950px 430px at 50% -190px, #194d42 0, transparent 90%), #071815; }
+button, select, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity:.5; }
+[hidden] { display:none!important; }
+.app-shell { max-width:1216px; margin:0 auto; padding:0 22px; }
+.topbar { display:flex; align-items:center; justify-content:space-between; min-height:83px; gap:16px; border-bottom:1px solid #244239; }
+.brand { display:flex; align-items:center; gap:11px; color:inherit; text-decoration:none; }
+.brand-mark { width:43px; height:43px; display:grid; place-items:center; border-radius:12px; background:#92edba; color:#0a2b21; box-shadow:0 7px 22px #0c3325aa; }
+.brand-text { font-size:20px; line-height:1; letter-spacing:.3px; font-weight:800; }
+.brand-text>span { color:#96e6b5; }
+.brand-text small { display:block; font-size:10px; font-weight:550; letter-spacing:2.1px; color:#8baaa0; margin-top:4px; text-transform:uppercase; }
+.privacy-badge { display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid #305243; border-radius:100px; font-size:12px; font-weight:650; color:#b0d0bb; background:#0d2821; white-space:nowrap; }
+.privacy-dot { display:inline-block; background:#64d89a; width:7px; height:7px; border-radius:50%; box-shadow:0 0 0 3px #26563b; }
+.intro { padding:48px 0 36px; max-width:800px; }
+.eyebrow, .section-kicker { color:#9ddcb8; font-size:11px; font-weight:750; letter-spacing:2px; text-transform:uppercase; }
+h1 { font-weight:750; font-size:clamp(32px,4.5vw,55px); letter-spacing:-2px; line-height:1.11; margin:17px 0; }
+h1 span { color:#99e0b8; }
+.intro p { color:#aec0b7; line-height:1.65; margin:0; max-width:710px; font-size:15px; }
+.intro strong { color:#e4eee7; }
+.main-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(315px,.8fr); gap:19px; align-items:start; }
+.panel { background:linear-gradient(145deg,#102821,#0e201c); border:1px solid #2a4439; box-shadow:0 15px 40px #00000015; border-radius:19px; padding:22px; min-width:0; }
+.section-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:17px; }
+h2 { font-size:19px; line-height:1.3; font-weight:720; margin:6px 0 0; letter-spacing:-.3px; }
+.state-pill, .count-pill { display:flex; align-items:center; gap:7px; white-space:nowrap; padding:7px 10px; border-radius:50px; color:#abc8b7; border:1px solid #345547; background:#17352a; font-size:11px; font-weight:700; }
+.state-pill.live { border-color:#5b9973; background:#194931; color:#b5f2c7; }
+.state-light { background:#72867c; width:7px; height:7px; border-radius:50%; }
+.state-pill.live .state-light { background:#7df0a9; box-shadow:0 0 0 3px #306849; }
+.count-pill { font-variant-numeric:tabular-nums; font-size:13px; padding:7px 13px; }
+.camera-frame { overflow:hidden; border-radius:14px; background:#06120f; border:1px solid #325244; }
+.camera-stage { position:relative; background:linear-gradient(135deg,#0a1e19,#0c1715); aspect-ratio:16/10; overflow:hidden; }
+#camera { display:none; }
+#previewCanvas,#overlayCanvas { display:block; width:100%; height:100%; position:absolute; inset:0; }
+#previewCanvas { object-fit:fill; }
+#overlayCanvas { pointer-events:none; }
+.empty-preview { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:24px; color:#a4c4b1; text-align:center; background: radial-gradient(circle at 50% 50%,#18352955 0%,transparent 58%); }
+.empty-preview strong { font-size:16px; color:#d9eee2; }
+.empty-preview span { font-size:13px; line-height:1.5; max-width:260px; }
+.empty-icon { color:#7fbea0; background:#1a382c; width:86px; height:86px; border:1px dashed #3b7053; display:grid; place-items:center; border-radius:20px; margin-bottom:4px; }
+.scan-caption { padding:10px 13px; color:#9dc2ad; background:#0a1914; display:flex; justify-content:space-between; gap:10px; align-items:center; font-size:12px; }
+.frame-dim { color:#6f9983; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.camera-actions { display:flex; gap:9px; margin-top:14px; flex-wrap:wrap; }
+.button { display:inline-flex; justify-content:center; align-items:center; gap:9px; border-radius:10px; padding:12px 16px; min-height:43px; font-size:13px; font-weight:750; border:1px solid transparent; transition:background .15s,border .15s,transform .1s; }
+.button:active:not(:disabled) { transform:translateY(1px); }
+.button.primary { background:#94e6b6; color:#0b291d; box-shadow:0 4px 20px #64bb8955; }
+.button.primary:hover:not(:disabled) { background:#b5f3cd; }
+.button.outline { color:#c5e0d1; border-color:#496b56; background:#17352a; }
+.button.outline:hover:not(:disabled) { background:#234838; }
+.button.subtle { border-color:#2d4b40; background:transparent; color:#a3bcac; }
+.button.big { width:100%; min-height:52px; font-size:14px; justify-content:space-between; padding-left:18px; padding-right:20px; }
+.button-icon { font-size:17px; }
+.aux-actions { display:flex; gap:23px; margin:14px 0 3px; align-items:center; flex-wrap:wrap; }
+.text-action { color:#a8d6bb; font-weight:650; font-size:12px; cursor:pointer; background:none; border:0; padding:2px; display:inline-flex; align-items:center; gap:7px; }
+.text-action:hover { color:#d5f9df; }
+.file-picker input { width:1px; height:1px; position:absolute; opacity:0; overflow:hidden; }
+.file-picker:focus-within { outline:2px solid #9ee8be; outline-offset:4px; border-radius:4px; }
+.settings { border-top:1px solid #345043; margin-top:19px; padding-top:17px; }
+.settings summary { font-size:13px; color:#c1d7c9; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:space-between; list-style:none; }
+.settings summary::-webkit-details-marker { display:none; }
+.settings[open] summary>span { transform:rotate(180deg); }
+.settings-body { margin-top:16px; display:grid; gap:16px; }
+.field-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.field-row>label, .slider-group label { font-size:12px; color:#c4d2ca; }
+select { background:#153227; color:#dfeee4; border:1px solid #41634f; border-radius:8px; padding:10px 9px; max-width:65%; font-size:12px; }
+select:focus-visible, button:focus-visible,input:focus-visible { outline:2px solid #9ce4b6; outline-offset:2px; }
+.toggle-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.toggle-row span { display:flex; flex-direction:column; gap:5px; }
+.toggle-row strong { font-size:12px; font-weight:650; }
+.toggle-row small,.slider-group small { font-size:11px; color:#89a99a; }
+.toggle-row input[type=checkbox] { appearance:none; width:42px; height:23px; border-radius:30px; background:#385345; border:1px solid #547362; position:relative; flex-shrink:0; transition:background .12s; }
+.toggle-row input[type=checkbox]::after { content:''; position:absolute; left:3px; top:3px; width:15px; height:15px; border-radius:50%; background:#cadbce; transition:transform .12s; }
+.toggle-row input[type=checkbox]:checked { background:#61b786; border-color:#8adea9; }
+.toggle-row input[type=checkbox]:checked::after { transform:translateX(19px); background:#0a3522; }
+.slider-group>div { display:flex; align-items:center; justify-content:space-between; }
+#biasLabel { font-size:11px; color:#9fe6b9; }
+.slider-group input { width:100%; accent-color:#9ee4b7; margin:12px 0; }
+.info-strip { font-size:12px; line-height:1.5; border:1px solid #375548; background:#183328; border-radius:10px; padding:11px 12px; color:#bdd4c7; min-height:57px; }
+.info-strip.ready { color:#bdedce; border-color:#4b8660; background:#183d2b; }
+.info-strip.warning { color:#f1d6a7; border-color:#745e3b; background:#342b1a; }
+.mode-switch { margin:16px 0; display:grid; grid-template-columns:1fr 1fr; border-radius:10px; background:#071813; border:1px solid #2f4d3f; padding:4px; }
+.mode-option { border:none; color:#a0b9aa; padding:10px 8px; background:transparent; font-size:12px; font-weight:700; border-radius:7px; }
+.mode-option.active { color:#09301d; background:#9ce4b5; }
+.dice-list { display:grid; gap:8px; min-height:195px; }
+.no-dice { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:30px 14px; gap:8px; color:#bbd1c2; background:#0c211a; border:1px dashed #355d47; border-radius:12px; }
+.no-dice-icon { font-size:36px; color:#769c84; line-height:1; }
+.no-dice strong { font-size:14px; }
+.no-dice small { font-size:12px; color:#8daa97; }
+.die-card { display:flex; align-items:center; gap:12px; padding:10px 11px; min-height:70px; border:1px solid #345744; background:#132b21; border-radius:11px; }
+.die-icon { width:45px; height:45px; border-radius:8px; background:#f5f5eb; border:2px solid #d9e1d5; display:grid; place-items:center; flex-shrink:0; }
+.die-icon svg { width:100%; height:100%; }
+.die-label { min-width:0; flex:1; display:flex; flex-direction:column; gap:3px; }
+.die-label strong { font-size:13px; }
+.die-label small { font-size:11px; color:#98b3a1; }
+.die-control { display:flex; align-items:center; gap:9px; }
+.die-control select { width:59px; max-width:59px; padding:7px 5px; font-size:14px; font-weight:700; text-align:center; }
+.die-number { min-width:42px; text-align:center; font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; color:#a0e7bd; }
+.die-remove { width:24px; height:28px; padding:0; display:grid; place-items:center; color:#90b5a0; background:transparent; border:0; font-size:18px; }
+.die-remove:hover { color:#fff; }
+.add-die { margin:9px 0 18px; width:100%; background:transparent; color:#9cdbb5; padding:10px; border:1px dashed #456b52; border-radius:9px; font-size:12px; font-weight:650; }
+.add-die:hover:not(:disabled) { background:#173b2a; }
+.validation-area { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:9px; }
+.final-result { background:linear-gradient(135deg,#1e4b32,#143925); border:1px solid #619c6e; border-radius:12px; margin-top:15px; padding:15px; }
+.result-top,.result-footer { display:flex; justify-content:space-between; align-items:center; gap:6px; color:#bad8bf; font-size:10px; font-weight:700; letter-spacing:.5px; }
+.result-numbers { display:flex; gap:9px; margin:13px 0; flex-wrap:wrap; }
+.number-chip { background:#c6f4d4; color:#133723; padding:10px 11px; border-radius:8px; font-size:20px; font-weight:800; min-width:46px; text-align:center; font-variant-numeric:tabular-nums; }
+.result-footer { letter-spacing:0; font-weight:450; font-size:11px; }
+.small-btn { background:transparent; color:#b0e5c2; border:1px solid #4b7859; border-radius:7px; font-size:11px; font-weight:700; padding:7px 9px; }
+.small-btn:hover { background:#254e36; }
+.lower-grid { display:grid; grid-template-columns:1fr 1fr; gap:19px; margin-top:19px; }
+.side-panel { padding:21px; }
+.side-panel h2 { font-size:17px; }
+.history-list { display:grid; gap:8px; }
+.history-entry { border:1px solid #2c4b3b; border-radius:9px; background:#0d241b; padding:11px 12px; display:flex; justify-content:space-between; align-items:center; gap:9px; }
+.history-entry strong { font-size:13px; font-variant-numeric:tabular-nums; letter-spacing:.3px; }
+.history-entry small { color:#8daf99; font-size:11px; white-space:nowrap; }
+.muted { color:#9aaea0; font-size:13px; }
+.tip { display:flex; gap:13px; padding-top:12px; }
+.tip-index { width:29px; height:29px; display:grid; place-items:center; background:#1b422c; border-radius:8px; font-size:11px; color:#abebbb; font-weight:750; flex-shrink:0; }
+.tip p { margin:4px 0 0; color:#9fb5a5; font-size:12px; line-height:1.5; }
+.tip p strong { color:#d7e7da; }
+.developer-note { display:flex; gap:14px; align-items:flex-start; padding:20px; border:1px solid #244e3a; border-radius:13px; background:#0c241b; margin:19px 0 26px; }
+.lock-icon { display:grid; place-items:center; border-radius:50%; color:#7ed79c; background:#16432c; font-size:12px; width:25px; height:25px; flex-shrink:0; }
+.developer-note strong { font-size:12px; color:#cdebd4; }
+.developer-note p { font-size:11px; line-height:1.5; color:#9ab7a3; margin:4px 0 0; }
+.footer { display:flex; justify-content:space-between; gap:10px; border-top:1px solid #27463a; padding:18px 0 28px; color:#779789; font-size:11px; }
+.toast { position:fixed; z-index:1000; bottom:calc(24px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); background:#c5f0d4; color:#133b25; padding:13px 18px; border-radius:10px; font-size:13px; font-weight:750; box-shadow:0 14px 40px #0008; max-width:90%; text-align:center; }
+@media (max-width:900px) { .main-grid { grid-template-columns:1fr; } .lower-grid { grid-template-columns:1fr 1fr; } .intro { padding-top:34px; } }
+@media (max-width:650px) { .app-shell { padding:0 13px; } .topbar { min-height:71px; } .brand-mark { width:38px; height:38px; } .brand-text { font-size:18px; } .privacy-badge { font-size:10px; padding:7px 9px; } .intro { padding:25px 2px 23px; } h1 { letter-spacing:-1.3px; font-size:33px; } .intro p { font-size:13px; } .panel { padding:15px; border-radius:15px; } .section-heading { margin-bottom:14px; } h2 { font-size:17px; } .camera-actions .button { flex:1; padding:10px 8px; font-size:12px; } .camera-actions #startCamera { flex:1.6; } .validation-area { grid-template-columns:1fr; } .lower-grid { grid-template-columns:1fr; gap:13px; margin-top:13px; } .footer { flex-direction:column; } .die-card { padding:8px; gap:8px; } .die-icon { width:39px; height:39px; } .die-control { gap:5px; } .die-number { min-width:32px; font-size:18px; } .die-remove { width:20px; } .die-label strong { font-size:12px; } .die-label small { font-size:10px; } }
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;}}
+</style>
+  <title>DicePad — Reconnaissance de dés physiques</title>
+
+
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a href="./" class="brand" aria-label="DicePad, accueil">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36" width="24" height="24"><rect x="3" y="3" width="30" height="30" rx="8" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="11" cy="11" r="2.4" fill="currentColor"/><circle cx="25" cy="11" r="2.4" fill="currentColor"/><circle cx="11" cy="25" r="2.4" fill="currentColor"/><circle cx="25" cy="25" r="2.4" fill="currentColor"/></svg></span>
+        <span class="brand-text">DICE<span>PAD</span><small>Vision</small></span>
+      </a>
+      <span class="privacy-badge"><span class="privacy-dot" aria-hidden="true"></span> Traitement local</span>
+    </header>
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div class="eyebrow">Prototype v1.0 · Dés à six faces</div>
+        <h1 id="page-title">Lancez de vrais dés.<br><span>Lisez les résultats.</span></h1>
+        <p>Cadrez de <strong>1 à 5 dés</strong> avec la caméra du smartphone. DicePad reconnaît les faces et peut leur attribuer des dizaines aléatoires de 1 à 5.</p>
+      </section>
+      <div class="main-grid">
+        <section class="panel capture-panel" aria-labelledby="camera-title">
+          <div class="section-heading">
+            <div><span class="section-kicker">01 / CAPTURE</span><h2 id="camera-title">Caméra du plateau</h2></div>
+            <span class="state-pill" id="sourceState"><span class="state-light"></span> Inactive</span>
+          </div>
+          <div class="camera-frame" id="cameraFrame">
+            <div class="camera-stage" id="cameraStage">
+              <video id="camera" muted autoplay playsinline aria-hidden="true" hidden></video>
+              <canvas id="previewCanvas" aria-label="Aperçu de la caméra ou de la photo analysée"></canvas>
+              <canvas id="overlayCanvas" aria-hidden="true"></canvas>
+              <div class="empty-preview" id="emptyPreview">
+                <div class="empty-icon" aria-hidden="true"><svg width="64" height="64" viewBox="0 0 64 64"><rect x="11" y="18" width="42" height="31" rx="7" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="32" cy="34" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="32" cy="34" r="3" fill="currentColor"/><path d="M20 18l4-6h16l4 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></div>
+                <strong>Votre plateau, en direct</strong>
+                <span>Activez la caméra arrière ou chargez une image test.</span>
+              </div>
+            </div>
+            <div class="scan-caption"><span id="scanStatus">En attente d'une image</span><span class="frame-dim" id="frameDimensions">—</span></div>
+          </div>
+          <div class="camera-actions">
+            <button class="button primary" id="startCamera" type="button"><span class="button-icon">◉</span> Activer la caméra</button>
+            <button class="button outline" id="scanButton" type="button" disabled>Analyser</button>
+            <button class="button subtle" id="stopCamera" type="button" disabled>Arrêter</button>
+          </div>
+          <div class="aux-actions">
+            <label class="text-action file-picker"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m4 18 6-6 4 4 3-3 4 4"/></svg> Importer une photo<input id="fileInput" type="file" accept="image/*"></label>
+            <button type="button" id="demoButton" class="text-action"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20h16V4H4z"/><path d="M8 4v16M4 9h16"/></svg> Tester avec 5 dés</button>
+          </div>
+          <details class="settings" id="settings">
+            <summary>Réglages de reconnaissance <span aria-hidden="true">⌄</span></summary>
+            <div class="settings-body">
+              <div class="field-row"><label for="diceTone">Couleur des dés</label><select id="diceTone"><option value="light">Clairs / points foncés</option><option value="dark">Foncés / points clairs</option></select></div>
+              <div class="field-row"><label for="rotation">Rotation de l'image</label><select id="rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
+              <label class="toggle-row"><span><strong>Inverser horizontalement</strong><small>Utile avec le miroir à 45°</small></span><input id="flipImage" type="checkbox" role="switch"></label>
+              <label class="toggle-row"><span><strong>Analyse automatique</strong><small>Une lecture environ toutes les 0,8 s</small></span><input id="autoScan" type="checkbox" role="switch" checked></label>
+              <div class="slider-group"><div><label for="thresholdBias">Seuil de contraste</label><span id="biasLabel">Auto · 0</span></div><input type="range" id="thresholdBias" min="-50" max="50" value="0" step="5"><small>En cas de lecture difficile, ajuster de quelques crans. L'algorithme calcule le seuil de base automatiquement.</small></div>
+            </div>
+          </details>
+        </section>
+        <section class="panel results-panel" aria-labelledby="results-title">
+          <div class="section-heading">
+            <div><span class="section-kicker">02 / LECTURE</span><h2 id="results-title">Résultats détectés</h2></div>
+            <span class="count-pill" id="diceCount">0 / 5</span>
+          </div>
+          <div class="info-strip" id="readingMessage" role="status" aria-live="polite">Placez vos dés sur un fond uniforme et contrasté. Évitez qu'ils se touchent.</div>
+          <div class="mode-switch" role="group" aria-label="Mode de restitution des résultats">
+            <button type="button" class="mode-option active" id="modeValues" aria-pressed="true">Valeurs 11–56</button>
+            <button type="button" class="mode-option" id="modeFaces" aria-pressed="false">Faces 1–6</button>
+          </div>
+          <div id="diceList" class="dice-list" aria-label="Dés reconnus">
+            <div class="no-dice"><span class="no-dice-icon">⚄</span><strong>Aucun dé détecté</strong><small>Les faces apparaîtront ici après une analyse.</small></div>
+          </div>
+          <button class="add-die" id="addDie" type="button">+ Ajouter un dé manuellement</button>
+          <div class="validation-area">
+            <button class="button primary big" id="validateButton" disabled type="button">Valider le lancer <span aria-hidden="true">→</span></button>
+            <button class="button outline" id="newRoll" type="button">Nouveau lancer</button>
+          </div>
+          <div class="final-result" id="finalResult" hidden>
+            <div class="result-top"><span>DERNIER LANCER VALIDÉ</span><span id="resultTime">—</span></div>
+            <div id="resultNumbers" class="result-numbers"></div>
+            <div class="result-footer"><span id="resultModeText">Valeurs attribuées aléatoirement</span><button id="copyJson" class="small-btn" type="button">Copier JSON</button></div>
+          </div>
+        </section>
+      </div>
+      <section class="lower-grid" aria-label="Historique et mode d'emploi">
+        <section class="panel side-panel history-panel"><div class="section-heading"><div><span class="section-kicker">03 / JOURNAL</span><h2>Historique</h2></div><button class="small-btn" id="clearHistory" type="button">Effacer</button></div><div id="historyList" class="history-list"><p class="muted">Aucun lancer enregistré.</p></div></section>
+        <section class="panel side-panel tips-panel"><span class="section-kicker">CONSEILS DE PRÉCISION</span><h2>Bien cadrer vos dés</h2><div class="tip"><span class="tip-index">01</span><p><strong>Fond contrasté.</strong> Dés blancs à points noirs sur tapis sombre, ou inversement.</p></div><div class="tip"><span class="tip-index">02</span><p><strong>Vue du dessus.</strong> Éclairage uniforme, sans reflets, et dés espacés d'environ 1 cm.</p></div><div class="tip"><span class="tip-index">03</span><p><strong>Contrôle humain.</strong> Vérifiez les faces proposées, corrigez une erreur puis validez.</p></div></section>
+      </section>
+      <section class="developer-note"><div class="lock-icon" aria-hidden="true">●</div><div><strong>Vos images restent sur votre appareil.</strong><p>Reconnaissance intégralement locale : aucune photo n'est envoyée à un serveur. Les résultats sont enregistrés uniquement dans ce navigateur. L'accès à la caméra nécessite une page HTTPS ou localhost.</p></div></section>
+    </main>
+    <footer class="footer"><span>DicePad Vision · Prototype local v1.0</span><span>1–5 D6 · Caméra Android · PWA installable</span></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script>/* DicePad Vision: dependency-free, local browser image analysis.
+ * Input: standard D6 with contrasting pips on a clean, contrasting mat.
+ * MIT License - project original code.
+ */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.DicePadVision = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  function clamp(x, min, max) { return Math.max(min, Math.min(max, x)); }
+  function otsu(hist, total) {
+    let weighted = 0;
+    for (let i = 0; i < 256; i++) weighted += i * hist[i];
+    let backgroundWeight = 0, backgroundSum = 0, best = -1, result = 127;
+    for (let k = 0; k < 256; k++) {
+      backgroundWeight += hist[k];
+      if (!backgroundWeight) continue;
+      const fg = total - backgroundWeight;
+      if (!fg) break;
+      backgroundSum += k * hist[k];
+      const meanB = backgroundSum / backgroundWeight;
+      const meanF = (weighted - backgroundSum) / fg;
+      const variance = backgroundWeight * fg * (meanB - meanF) ** 2;
+      if (variance > best) { best = variance; result = k; }
+    }
+    return result;
+  }
+  function morphologyClose(mask, w, h, iterations = 1) {
+    // Small 3x3 closing heals specular gaps in the body of a die without
+    // filling ordinary-sized pips. Applied only to die-body detection.
+    let src = mask;
+    for (let r = 0; r < iterations; r++) {
+      const dilated = new Uint8Array(w * h);
+      for (let y = 1; y < h - 1; y++) {
+        const row = y * w;
+        for (let x = 1; x < w - 1; x++) {
+          const i = row + x;
+          if (src[i] || src[i - 1] || src[i + 1] || src[i - w] || src[i + w] ||
+              src[i - w - 1] || src[i - w + 1] || src[i + w - 1] || src[i + w + 1]) dilated[i] = 1;
+        }
+      }
+      const closed = new Uint8Array(w * h);
+      for (let y = 1; y < h - 1; y++) {
+        const row = y * w;
+        for (let x = 1; x < w - 1; x++) {
+          const i = row + x;
+          if (dilated[i] && dilated[i - 1] && dilated[i + 1] && dilated[i - w] && dilated[i + w] &&
+              dilated[i - w - 1] && dilated[i - w + 1] && dilated[i + w - 1] && dilated[i + w + 1]) closed[i] = 1;
+        }
+      }
+      src = closed;
+    }
+    return src;
+  }
+  function connectedComponents(mask, w, h, minArea, maxArea) {
+    const seen = new Uint8Array(w * h);
+    const queue = new Int32Array(w * h);
+    const components = [];
+    // Skip physical image boundary to avoid partial objects.
+    for (let y0 = 2; y0 < h - 2; y0++) {
+      for (let x0 = 2; x0 < w - 2; x0++) {
+        const start = y0 * w + x0;
+        if (!mask[start] || seen[start]) continue;
+        let head = 0, tail = 1, area = 0;
+        queue[0] = start; seen[start] = 1;
+        let left = x0, right = x0, top = y0, bottom = y0;
+        let sumX = 0, sumY = 0, edge = false;
+        while (head < tail) {
+          const idx = queue[head++], x = idx % w, y = (idx - x) / w;
+          area++; sumX += x; sumY += y;
+          if (x < left) left = x;
+          if (x > right) right = x;
+          if (y < top) top = y;
+          if (y > bottom) bottom = y;
+          if (x < 5 || y < 5 || x >= w - 5 || y >= h - 5) edge = true;
+          // 8 connectivity handles diagonal lines on rotated die faces.
+          const yStart = y > 0 ? y - 1 : y;
+          const yEnd = y < h - 1 ? y + 1 : y;
+          const xStart = x > 0 ? x - 1 : x;
+          const xEnd = x < w - 1 ? x + 1 : x;
+          for (let yy = yStart; yy <= yEnd; yy++) {
+            const row = yy * w;
+            for (let xx = xStart; xx <= xEnd; xx++) {
+              const ni = row + xx;
+              if (mask[ni] && !seen[ni]) { seen[ni] = 1; queue[tail++] = ni; }
+            }
+          }
+        }
+        if (area < minArea || area > maxArea || edge) continue;
+        components.push({x:left, y:top, w:right-left+1, h:bottom-top+1,
+          area, cx:sumX/area, cy:sumY/area});
+      }
+    }
+    return components;
+  }
+  function detectPips(box, gray, w, h, threshold, tone) {
+    const pad = Math.max(2, Math.round(Math.min(box.w, box.h) * .08));
+    const x0 = Math.max(0, box.x - pad), y0 = Math.max(0, box.y - pad);
+    const x1 = Math.min(w, box.x + box.w + pad), y1 = Math.min(h, box.y + box.h + pad);
+    const ww = x1 - x0, hh = y1 - y0;
+    const dark = new Uint8Array(ww * hh), visited = new Uint8Array(ww * hh);
+    const queue = new Int32Array(ww * hh);
+    let faceLumSum = 0, faceLumCount = 0;
+    for (let y = box.y; y < box.y + box.h; y += 2) {
+      for (let x = box.x; x < box.x + box.w; x += 2) {
+        const value = gray[y * w + x];
+        if (tone === 'light' && value > threshold) { faceLumSum += value; faceLumCount++; }
+        else if (tone === 'dark' && value < threshold) { faceLumSum += value; faceLumCount++; }
+      }
+    }
+    const faceLum = faceLumSum / Math.max(1, faceLumCount);
+    // Use a threshold closer to body than background: dark pip and border
+    // stay disconnected from a bright face; other mode is symmetric.
+    const pipThreshold = tone === 'light'
+      ? clamp(Math.round(threshold + (faceLum - threshold) * 0.05), 10, 245)
+      : clamp(Math.round(threshold + (faceLum - threshold) * 0.05), 10, 245);
+    for (let yy = 0; yy < hh; yy++) {
+      let o = (yy + y0) * w + x0;
+      for (let xx = 0; xx < ww; xx++) {
+        const g = gray[o + xx];
+        dark[yy * ww + xx] = tone === 'light' ? (g <= pipThreshold ? 1 : 0) : (g >= pipThreshold ? 1 : 0);
+      }
+    }
+    const side = Math.min(box.w, box.h), pips = [];
+    const areaMin = Math.max(3, side * side * .0028);
+    const areaMax = side * side * .105;
+    for (let y = 0; y < hh; y++) {
+      for (let x = 0; x < ww; x++) {
+        const start = y * ww + x;
+        if (!dark[start] || visited[start]) continue;
+        let head = 0, tail = 1, area = 0;
+        queue[0] = start; visited[start] = 1;
+        let minx = x, maxx = x, miny = y, maxy = y;
+        let sumX = 0, sumY = 0, touchesEdge = false;
+        while (head < tail) {
+          const idx = queue[head++], xx = idx % ww, yy = (idx - xx) / ww;
+          area++; sumX += xx; sumY += yy;
+          if (xx < minx) minx = xx;
+          if (xx > maxx) maxx = xx;
+          if (yy < miny) miny = yy;
+          if (yy > maxy) maxy = yy;
+          if (xx === 0 || yy === 0 || xx === ww-1 || yy === hh-1) touchesEdge = true;
+          if (xx > 0) { const ni=idx-1; if (dark[ni]&&!visited[ni]){visited[ni]=1;queue[tail++]=ni;} }
+          if (xx < ww-1){const ni=idx+1; if(dark[ni]&&!visited[ni]){visited[ni]=1;queue[tail++]=ni;} }
+          if (yy > 0) { const ni=idx-ww; if (dark[ni]&&!visited[ni]){visited[ni]=1;queue[tail++]=ni;} }
+          if (yy < hh-1){const ni=idx+ww; if(dark[ni]&&!visited[ni]){visited[ni]=1;queue[tail++]=ni;} }
+        }
+        if (touchesEdge || area < areaMin || area > areaMax) continue;
+        const bw = maxx-minx+1, bh = maxy-miny+1;
+        const asp = bw/bh, circular = area/(bw*bh);
+        const cx = sumX / area + x0, cy = sumY / area + y0;
+        const relativeX = (cx - box.x)/box.w, relativeY = (cy - box.y)/box.h;
+        if (asp < .55 || asp > 1.8 || circular < .44 || circular > .96) continue;
+        if (relativeX < .09 || relativeX > .91 || relativeY < .09 || relativeY > .91) continue;
+        pips.push({x:cx,y:cy,area,roundness:circular});
+      }
+    }
+    const pipSizes = pips.map(p=>p.area).sort((a,b)=>a-b);
+    const sizeRatio = pipSizes.length>1 ? pipSizes[pipSizes.length-1]/pipSizes[0] : 1;
+    return {count:pips.length,pips,sizeRatio,pipThreshold};
+  }
+  function recognize(image, options = {}) {
+    const w = image.width, h = image.height, raw = image.data;
+    if (!w || !h || !raw || raw.length < w*h*4) throw new Error('Image RGBA invalide');
+    const tone = options.tone === 'dark' ? 'dark' : 'light';
+    const thresholdMode = options.thresholdMode || 'auto';
+    const gray = new Uint8Array(w*h), hist = new Uint32Array(256);
+    let samples = 0;
+    for (let i = 0, j = 0; i < gray.length; i++, j += 4) {
+      const g = (raw[j]*77 + raw[j+1]*150 + raw[j+2]*29) >> 8;
+      gray[i] = g;
+      if (i % 3 === 0) { hist[g]++; samples++; }
+    }
+    const autoThreshold = otsu(hist,samples);
+    const threshold = thresholdMode === 'manual'
+      ? clamp(Math.round(Number(options.threshold) || 125), 20, 245)
+      : clamp(autoThreshold + (Number(options.bias)||0), 20, 245);
+    const mask = new Uint8Array(w*h);
+    const margin = Math.round(Math.min(w,h)*.025);
+    for (let y=margin;y<h-margin;y++) {
+      const row = y*w;
+      for (let x=margin;x<w-margin;x++) {
+        const idx = row+x;
+        mask[idx] = tone === 'light' ? (gray[idx]>threshold?1:0) : (gray[idx]<threshold?1:0);
+      }
+    }
+    const closed = morphologyClose(mask,w,h,1);
+    const m = Math.min(w,h);
+    const minArea = Math.max(75, (m*.027)**2);
+    const maxArea = w*h*.14;
+    const components = connectedComponents(closed,w,h,minArea,maxArea);
+    const all = components.map(b => {
+      const minSide = Math.min(b.w,b.h), maxSide=Math.max(b.w,b.h), aspect = maxSide/minSide;
+      const fill = b.area/(b.w*b.h);
+      if (minSide<m*.024 || maxSide>m*.32 || aspect>1.5 || fill<.42 || fill>.99) return null;
+      const pip = detectPips(b,gray,w,h,threshold,tone);
+      if (!pip.count || pip.count > 6) return null;
+      const shapeScore = clamp((1.5-aspect)/.5,0,1);
+      const areaScore = clamp((fill-.42)/.25,0,1);
+      const pipScore = clamp(1.8/pip.sizeRatio,0,1);
+      const confidence = clamp((.35*shapeScore+.25*areaScore+.40*pipScore),0,1);
+      return {...b,face:pip.count,pips:pip.pips,confidence,fill,aspect};
+    }).filter(Boolean).sort((a,b) => a.cy-b.cy || a.cx-b.cx);
+    const dice = all.slice(0,5).map((d,i)=>({...d,slot:i+1}));
+    return {dice, detectedTotal:all.length, threshold, autoThreshold, tone,
+      warnings:[
+        ...(all.length>5?['Plus de cinq dés détectés : vérifiez la scène.']:[]),
+        ...(!all.length?['Aucun dé reconnu. Utilisez des dés clairs à points foncés sur un fond sombre, ou inversement.']:[]),
+        ...(dice.some(d=>d.confidence<.62)?['Une ou plusieurs lectures sont incertaines. Vérifiez les faces.']:[])
+      ]};
+  }
+  return {recognize,otsu};
+});
+</script>
+<script>/* DicePad Vision 1.0 — mobile-first camera UI and local results.
+ * All camera analysis happens on-device via vision.js (no image uploads).
+ */
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const els = {
+    video:$('camera'), preview:$('previewCanvas'), overlay:$('overlayCanvas'),
+    stage:$('cameraStage'), empty:$('emptyPreview'), sourceState:$('sourceState'),
+    status:$('scanStatus'), dimensions:$('frameDimensions'), start:$('startCamera'),
+    stop:$('stopCamera'), scan:$('scanButton'), file:$('fileInput'), demo:$('demoButton'),
+    tone:$('diceTone'), rotate:$('rotation'), flip:$('flipImage'), auto:$('autoScan'),
+    bias:$('thresholdBias'), biasLabel:$('biasLabel'), diceCount:$('diceCount'),
+    message:$('readingMessage'), list:$('diceList'), addDie:$('addDie'),
+    modeValues:$('modeValues'), modeFaces:$('modeFaces'), validate:$('validateButton'),
+    newRoll:$('newRoll'), final:$('finalResult'), finalNumbers:$('resultNumbers'),
+    resultTime:$('resultTime'), resultModeText:$('resultModeText'), copy:$('copyJson'),
+    history:$('historyList'), clearHistory:$('clearHistory'), toast:$('toast')
+  };
+  const previewCtx = els.preview.getContext('2d', {willReadFrequently:true});
+  const overlayCtx = els.overlay.getContext('2d');
+  const PIP_LAYOUTS = {
+    1:[[50,50]],2:[[25,25],[75,75]],3:[[25,25],[50,50],[75,75]],
+    4:[[25,25],[75,25],[25,75],[75,75]],
+    5:[[25,25],[75,25],[50,50],[25,75],[75,75]],
+    6:[[25,20],[75,20],[25,50],[75,50],[25,80],[75,80]]
+  };
+  const HISTORY_KEY = 'dicepad-vision-history-v1';
+  const state = {
+    stream:null, source:'none', sourceImage:null, dice:[],
+    viewMode:'values', lastResult:null, history:loadHistory(),
+    locked:false, stableScans:0, lastSignature:'',
+    lastPreview:0, lastScan:0, rafId:0, toastTimer:0,
+    frameReady:false
+  };
+  function loadHistory() {
+    try { const value=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'); return Array.isArray(value)?value.slice(0,15):[]; }
+    catch { return []; }
+  }
+  function persistHistory() { try { localStorage.setItem(HISTORY_KEY,JSON.stringify(state.history)); } catch {} }
+  function showToast(text) {
+    clearTimeout(state.toastTimer);
+    els.toast.textContent=text; els.toast.hidden=false;
+    state.toastTimer=setTimeout(()=>els.toast.hidden=true,2700);
+  }
+  function setMessage(text,kind='') {
+    els.message.textContent=text; els.message.className='info-strip'+(kind?' '+kind:'');
+  }
+  function setStatus(text) { els.status.textContent=text; }
+  function setSourceState(text,live) {
+    els.sourceState.innerHTML='<span class="state-light"></span> '+text;
+    els.sourceState.classList.toggle('live',!!live);
+  }
+  function renderStage() {
+    if (state.source === 'none') return false;
+    const source = state.source === 'camera' ? els.video : state.sourceImage;
+    if(!source) return false;
+    const sw = source.videoWidth || source.naturalWidth || source.width;
+    const sh = source.videoHeight || source.naturalHeight || source.height;
+    if (!sw || !sh) return false;
+    const rotation = Number(els.rotate.value);
+    const horizontal = rotation % 180 === 0;
+    const scale = Math.min(1,960/Math.max(sw,sh));
+    const w = Math.max(1,Math.round((horizontal?sw:sh)*scale));
+    const h = Math.max(1,Math.round((horizontal?sh:sw)*scale));
+    if (els.preview.width!==w || els.preview.height!==h) {
+      els.preview.width=w; els.preview.height=h;
+      els.overlay.width=w; els.overlay.height=h;
+    }
+    els.stage.style.aspectRatio=`${w} / ${h}`;
+    els.dimensions.textContent=`${w} × ${h}`;
+    previewCtx.save(); previewCtx.clearRect(0,0,w,h);
+    previewCtx.translate(w/2,h/2);
+    previewCtx.rotate(rotation*Math.PI/180);
+    previewCtx.scale(els.flip.checked?-1:1,1);
+    previewCtx.drawImage(source,-sw*scale/2,-sh*scale/2,sw*scale,sh*scale);
+    previewCtx.restore();
+    els.empty.hidden=true; state.frameReady=true;
+    els.scan.disabled=false;
+    return true;
+  }
+  function drawOverlay() {
+    const w=els.overlay.width, h=els.overlay.height;
+    overlayCtx.clearRect(0,0,w,h);
+    for (const [i,die] of state.dice.entries()) {
+      if (die.manual || die.x === undefined) continue;
+      const good=die.confidence>=.62;
+      const stroke=good?'#8cfab4':'#f6cf79';
+      const lineWidth=Math.max(2,Math.round(w/360));
+      overlayCtx.strokeStyle=stroke; overlayCtx.lineWidth=lineWidth;
+      overlayCtx.strokeRect(die.x-4,die.y-4,die.w+8,die.h+8);
+      if (Array.isArray(die.pips)) {
+        overlayCtx.strokeStyle='#ffffff'; overlayCtx.lineWidth=1.7;
+        for (const p of die.pips) {
+          overlayCtx.beginPath();overlayCtx.arc(p.x,p.y,Math.max(3,Math.sqrt(p.area/Math.PI)*1.25),0,Math.PI*2);overlayCtx.stroke();
+        }
+      }
+      const text=String(die.face); const font=Math.max(12,Math.min(24,w*.022));
+      overlayCtx.font=`bold ${font}px system-ui`;
+      const x=Math.min(w-31,Math.max(0,die.x-4)),y=Math.max(1,die.y-font-10);
+      overlayCtx.fillStyle=good?'#133d27':'#513a15'; overlayCtx.fillRect(x,y,28,font+8);
+      overlayCtx.fillStyle=stroke;overlayCtx.fillText(text,x+9,y+font+1);
+    }
+  }
+  function generateFrame(ts) {
+    if (state.source!=='camera'||!state.stream) return;
+    if (ts-state.lastPreview>85) {
+      state.lastPreview=ts;
+      if(renderStage()) {
+        if(!state.locked && els.auto.checked && ts-state.lastScan>780) {
+          state.lastScan=ts; analyzeImage(true);
+        } else drawOverlay();
+      }
+    }
+    state.rafId=requestAnimationFrame(generateFrame);
+  }
+  async function startCamera() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMessage('Accès caméra indisponible. Ouvrez l’application depuis une adresse HTTPS ou http://localhost, dans Chrome sur Android.','warning');
+      showToast('Caméra : connexion HTTPS nécessaire');
+      return;
+    }
+    try {
+      els.start.disabled=true;
+      setStatus('Autorisation caméra en cours…');
+      await stopCamera(true);
+      const stream=await navigator.mediaDevices.getUserMedia({
+        audio:false, video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:24,max:30}}
+      });
+      state.stream=stream;els.video.srcObject=stream;
+      await els.video.play();
+      state.sourceImage=null;state.source='camera';state.frameReady=false;
+      state.locked=false;state.lastSignature='';state.stableScans=0;
+      els.stop.disabled=false;els.start.textContent='↻ Réactiver la caméra';
+      setSourceState('Caméra active',true);setStatus('Recherche des dés…');
+      if (state.rafId) cancelAnimationFrame(state.rafId);
+      state.rafId=requestAnimationFrame(generateFrame);
+      els.start.disabled=false;
+    } catch(err) {
+      els.start.disabled=false; els.stop.disabled=true;
+      const name=err?.name||'';
+      const msg=name==='NotAllowedError'?'Accès caméra refusé : autorisez la caméra dans le navigateur.'
+        : name==='NotFoundError'?'Aucune caméra accessible sur cet appareil.'
+        : `Impossible d’activer la caméra (${name||'erreur'}). Utilisez une photo pour tester.`;
+      setMessage(msg,'warning');setStatus('Caméra indisponible');setSourceState('Inactive',false);
+      console.error('DicePad camera:',err);
+    }
+  }
+  async function stopCamera(keepFrame=false) {
+    if(state.rafId) cancelAnimationFrame(state.rafId);
+    state.rafId=0;
+    if(state.stream){state.stream.getTracks().forEach(t=>t.stop());state.stream=null;}
+    if(els.video.srcObject) els.video.srcObject=null;
+    if(state.source==='camera') {
+      state.source=keepFrame?'none':'frozen';
+      if (!keepFrame) { setSourceState('Image figée',false); setStatus('Image capturée'); }
+    }
+    els.stop.disabled=true;
+    els.start.disabled=false;
+    if(!keepFrame) drawOverlay();
+  }
+  function setImage(source,kind='photo') {
+    state.sourceImage=source;state.source=kind;state.frameReady=false;
+    state.locked=false;state.dice=[];state.lastSignature='';state.stableScans=0;
+    if (!renderStage()) throw new Error('Image non décodable');
+    setSourceState(kind==='demo'?'Exemple chargé':'Photo chargée',false);
+    analyzeImage(false);
+    renderDiceList();
+  }
+  async function loadPhotoFile(file) {
+    if(!file) return;
+    if(!file.type.startsWith('image/')){showToast('Choisissez un fichier image');return;}
+    await stopCamera(true);
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    try {
+      await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url;});
+      setImage(img,'photo');
+    } catch(e){setMessage('Impossible de lire cette image. Choisissez une photo JPEG ou PNG.','warning');}
+    finally{URL.revokeObjectURL(url);els.file.value='';}
+  }
+  async function loadDemo() {
+    await stopCamera(true);
+    els.tone.value='light';els.bias.value='0';els.biasLabel.textContent='Auto · 0';
+    const canvas=document.createElement('canvas');canvas.width=760;canvas.height=470;
+    const cx=canvas.getContext('2d');cx.fillStyle='#25352e';cx.fillRect(0,0,760,470);
+    const pips={1:[[0,0]],2:[[-1,-1],[1,1]],3:[[-1,-1],[0,0],[1,1]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],6:[[-1,-1],[-1,0],[-1,1],[1,-1],[1,0],[1,1]]};
+    [[130,120,2],[380,120,5],[610,120,3],[260,320,6],[505,320,1]].forEach(([x,y,v])=>{
+      cx.fillStyle='#f9f9f5';cx.fillRect(x-48,y-48,96,96);
+      cx.fillStyle='#17191b';pips[v].forEach(([a,b])=>{cx.beginPath();cx.arc(x+a*26,y+b*26,9,0,Math.PI*2);cx.fill();});
+    });
+    const img=new Image();
+    img.onload=()=>{setImage(img,'demo');showToast('Exemple chargé : cinq dés à reconnaître')};
+    img.src=canvas.toDataURL('image/png');
+  }
+
+  function analyzeImage(isAuto=false) {
+    if(state.locked || !state.frameReady) return;
+    try {
+      const image=previewCtx.getImageData(0,0,els.preview.width,els.preview.height);
+      const result=window.DicePadVision.recognize(image,{
+        tone:els.tone.value, bias:Number(els.bias.value)
+      });
+      let dice=result.dice.map((d,i)=>({...d,source:'camera',manual:false,id:i+1}));
+      // If the user added a die manually, allow intentional manual mode only.
+      const signature=dice.map(d=>d.face).sort((a,b)=>a-b).join(',');
+      if(signature && signature===state.lastSignature) state.stableScans++;
+      else {state.lastSignature=signature;state.stableScans=1;}
+      state.dice=dice;
+      if(dice.length===0) {
+        setMessage('Aucun dé lisible. Écartez-les, augmentez le contraste ou changez le réglage « Couleur des dés ».','warning');
+        setStatus(`Seuil ${result.threshold} · Aucun dé`);
+      } else {
+        let text=`${dice.length} dé${dice.length>1?'s':''} reconnu${dice.length>1?'s':''} · faces : ${dice.map(d=>d.face).join(' · ')}`;
+        let kind=state.stableScans>=2?'ready':'';
+        if(result.warnings.length) {text+=' · Vérifiez les lectures.';kind='warning';}
+        else if(state.stableScans>=2) text+=' · Prêt à valider.';
+        else if(isAuto) text+=' · Stabilisation…';
+        setMessage(text,kind);
+        setStatus(`Seuil ${result.threshold} · ${dice.length} dé${dice.length>1?'s':''}`);
+      }
+      renderDiceList();drawOverlay();
+    } catch(err) {
+      console.error('DicePad vision:',err);
+      setMessage('Erreur de lecture de l’image. Essayez une nouvelle photo.','warning');
+    }
+  }
+  function pipsSvg(face) {
+    const circles=(PIP_LAYOUTS[Number(face)]||[]).map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9.5" fill="#1c3230"/>`).join('');
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">${circles}</svg>`;
+  }
+  function renderDiceList() {
+    els.list.replaceChildren();
+    els.diceCount.textContent=`${state.dice.length} / 5`;
+    els.validate.disabled=state.dice.length===0 || state.locked;
+    els.addDie.disabled=state.dice.length>=5 || state.locked;
+    if(!state.dice.length){
+      const empty=document.createElement('div');empty.className='no-dice';
+      empty.innerHTML='<span class="no-dice-icon">⚄</span><strong>Aucun dé détecté</strong><small>Les faces apparaîtront ici après une analyse.</small>';
+      els.list.append(empty);return;
+    }
+    state.dice.forEach((die,i)=>{
+      const row=document.createElement('div');row.className='die-card';
+      const icon=document.createElement('div');icon.className='die-icon';icon.innerHTML=pipsSvg(die.face);
+      const label=document.createElement('div');label.className='die-label';
+      const name=document.createElement('strong');name.textContent=`Dé ${i+1}`;
+      const confidence=document.createElement('small');
+      confidence.textContent=die.manual?'Correction ou saisie manuelle':
+        die.confidence<.62?'Lecture à vérifier':'Face détectée par la caméra';
+      label.append(name,confidence);
+      const actions=document.createElement('div');actions.className='die-control';
+      const sel=document.createElement('select');sel.setAttribute('aria-label',`Corriger la face du dé ${i+1}`);
+      for(let n=1;n<=6;n++){const o=new Option(String(n),String(n));sel.add(o);}
+      sel.value=String(die.face);sel.disabled=state.locked;
+      sel.addEventListener('change',()=>{
+        if(state.locked) return;
+        die.face=Number(sel.value);die.manual=true;
+        els.auto.checked=false;state.lastSignature='';
+        setMessage('Face corrigée. Analyse automatique désactivée pour préserver votre correction. Vous pouvez valider.','ready');
+        renderDiceList();drawOverlay();
+      });
+      const n=document.createElement('span');n.className='die-number';
+      n.textContent=state.viewMode==='faces'
+        ?String(die.face)
+        :(state.locked&&state.lastResult?String(state.lastResult.dice[i]?.number??die.face):'—');
+      const remove=document.createElement('button');remove.className='die-remove';remove.type='button';
+      remove.textContent='×';remove.title=`Retirer le dé ${i+1}`;remove.disabled=state.locked;
+      remove.addEventListener('click',()=>{
+        state.dice.splice(i,1);els.auto.checked=false;
+        state.lastSignature='';setMessage('Dé retiré de la lecture. Analyse automatique désactivée.','ready');
+        renderDiceList();drawOverlay();
+      });
+      actions.append(sel,n,remove);row.append(icon,label,actions);els.list.append(row);
+    });
+  }
+  function randomInt(max) {
+    if(globalThis.crypto?.getRandomValues){
+      const buffer=new Uint32Array(1);
+      const limit=Math.floor(4294967296/max)*max;
+      do{crypto.getRandomValues(buffer);}while(buffer[0]>=limit);
+      return buffer[0]%max;
+    }
+    return Math.floor(Math.random()*max);
+  }
+  function shuffledTens() {
+    const values=[1,2,3,4,5];
+    for(let i=values.length-1;i>0;i--){let j=randomInt(i+1);[values[i],values[j]]=[values[j],values[i]];}
+    return values;
+  }
+  function validateRoll() {
+    if(!state.dice.length || state.locked) return;
+    const tens=shuffledTens();
+    const dice=state.dice.map((die,i)=>({
+      slot:i+1,face:die.face,dizaine:tens[i],number:tens[i]*10+die.face,
+      source:die.manual?'manual':'camera'
+    }));
+    const record={version:1,type:'dice_roll',id:globalThis.crypto?.randomUUID?.()||String(Date.now()),
+      timestamp:new Date().toISOString(),count:dice.length,dice,
+      faces:dice.map(d=>d.face),values:dice.map(d=>d.number)};
+    state.lastResult=record;state.history.unshift(record);state.history=state.history.slice(0,15);
+    persistHistory();state.locked=true;
+    renderDiceList();renderFinalResult();renderHistory();
+    setMessage('Lancer validé. Les résultats sont figés jusqu’au prochain lancer.','ready');
+    setStatus('Lancer validé');
+    showToast(`${dice.length} dé${dice.length>1?'s':''} enregistré${dice.length>1?'s':''}`);
+    try{window.dispatchEvent(new CustomEvent('dicepad:roll',{detail:record}));}catch{}
+  }
+  function renderFinalResult(){
+    const record=state.lastResult;
+    els.final.hidden=!record;
+    if(!record) return;
+    const values=state.viewMode==='faces'?record.faces:record.values;
+    els.finalNumbers.replaceChildren();
+    values.forEach(n=>{const el=document.createElement('span');el.className='number-chip';el.textContent=String(n);els.finalNumbers.append(el);});
+    els.resultTime.textContent=new Date(record.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    els.resultModeText.textContent=state.viewMode==='faces'?'Faces physiques (1 à 6)':'Dizaines distinctes attribuées aléatoirement';
+  }
+  function renderHistory(){
+    els.history.replaceChildren();
+    if(!state.history.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucun lancer enregistré.';els.history.append(p);return;}
+    state.history.slice(0,8).forEach(rec=>{
+      const el=document.createElement('div');el.className='history-entry';
+      const strong=document.createElement('strong');strong.textContent=(state.viewMode==='faces'?rec.faces:rec.values).join(' · ');
+      const small=document.createElement('small');small.textContent=new Date(rec.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      el.append(strong,small);els.history.append(el);
+    });
+  }
+  function setViewMode(mode){
+    state.viewMode=mode;
+    els.modeValues.classList.toggle('active',mode==='values');els.modeFaces.classList.toggle('active',mode==='faces');
+    els.modeValues.setAttribute('aria-pressed',String(mode==='values'));
+    els.modeFaces.setAttribute('aria-pressed',String(mode==='faces'));
+    renderDiceList();renderFinalResult();renderHistory();
+  }
+  function newRoll(){
+    state.dice=[];state.locked=false;state.lastResult=null;
+    state.lastSignature='';state.stableScans=0;
+    els.final.hidden=true;
+    renderDiceList();drawOverlay();
+    setMessage('Nouveau lancer : placez les dés, attendez l’immobilisation puis validez.');
+    setStatus(state.source==='camera'?'Recherche des dés…':'Prêt pour une nouvelle lecture');
+    if(state.source==='photo'||state.source==='demo'||state.source==='frozen') {
+      if(state.source==='frozen') {state.source='none';state.frameReady=false;els.empty.hidden=false;els.scan.disabled=true;}
+      else analyzeImage(false);
+    }
+  }
+  async function copyJson(){
+    if(!state.lastResult)return;
+    const raw=JSON.stringify(state.lastResult,null,2);
+    try { await navigator.clipboard.writeText(raw);showToast('JSON copié dans le presse-papiers'); }
+    catch {
+      const area=document.createElement('textarea');area.value=raw;document.body.append(area);area.select();
+      const ok=document.execCommand('copy');area.remove();showToast(ok?'JSON copié':'Copie automatique indisponible');
+    }
+  }
+  function updateImageSettings(){
+    if(state.source==='none'||state.source==='frozen')return;
+    if(renderStage()&&!state.locked)analyzeImage(false);
+    else drawOverlay();
+  }
+  // Controls
+  els.start.addEventListener('click',startCamera);
+  els.stop.addEventListener('click',()=>stopCamera(false));
+  els.scan.addEventListener('click',()=>{
+    if(state.source==='camera')renderStage();
+    if(state.locked){showToast('Appuyez sur « Nouveau lancer » pour recommencer');return;}
+    analyzeImage(false);
+  });
+  els.file.addEventListener('change',e=>loadPhotoFile(e.target.files?.[0]));
+  els.demo.addEventListener('click',loadDemo);
+  els.tone.addEventListener('change',updateImageSettings);
+  els.rotate.addEventListener('change',updateImageSettings);
+  els.flip.addEventListener('change',updateImageSettings);
+  els.bias.addEventListener('input',()=>{
+    const n=Number(els.bias.value);
+    els.biasLabel.textContent=`Auto ${n<0?'−':n>0?'+':'·'} ${Math.abs(n)}`;
+  });
+  els.bias.addEventListener('change',updateImageSettings);
+  els.modeValues.addEventListener('click',()=>setViewMode('values'));
+  els.modeFaces.addEventListener('click',()=>setViewMode('faces'));
+  els.validate.addEventListener('click',validateRoll);
+  els.newRoll.addEventListener('click',newRoll);
+  els.copy.addEventListener('click',copyJson);
+  els.addDie.addEventListener('click',()=>{
+    if(state.dice.length>=5||state.locked)return;
+    els.auto.checked=false;
+    state.dice.push({face:1,manual:true,source:'manual',confidence:1,id:state.dice.length+1});
+    setMessage('Dé ajouté manuellement : choisissez sa face, puis validez.','ready');
+    renderDiceList();
+  });
+  els.clearHistory.addEventListener('click',()=>{
+    state.history=[];persistHistory();renderHistory();showToast('Historique effacé');
+  });
+  window.addEventListener('beforeunload',()=>{
+    if(state.stream)state.stream.getTracks().forEach(track=>track.stop());
+  });
+  renderDiceList();renderHistory();
+  // PWA files are cached only on secure origins; camera images are never cached.
+  if('serviceWorker' in navigator && location.protocol==='https:') {window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));}
+  window.__DicePad = {getState:()=>({dice:state.dice,source:state.source,locked:state.locked,lastResult:state.lastResult}),analyze:analyzeImage};
+})();
+</script>
+</body>
+</html>
